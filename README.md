@@ -52,13 +52,6 @@ npm install bootstrap@3
 ## Main Files: Project Structure
 
   ```sh
-  ├── README.md
-  ├── app.py *** the main driver of the app. Includes your SQLAlchemy models.
-                    "python app.py" to run after installing dependencies
-  ├── config.py *** Database URLs, CSRF generation, etc
-  ├── error.log
-  ├── forms.py *** Your forms
-  ├── requirements.txt *** The dependencies we need to install with "pip3 install -r requirements.txt"
   ├── static
   │   ├── css 
   │   ├── font
@@ -70,6 +63,17 @@ npm install bootstrap@3
       ├── forms
       ├── layouts
       └── pages
+  ├── .env *** The environment variables for the database connection
+  ├── .gitignore
+  ├── app.py *** the main driver of the app. Includes your SQLAlchemy models.
+                    "python app.py" to run after installing dependencies
+  ├── config.py *** Database URLs, CSRF generation, etc
+  ├── error.log
+  ├── forms.py *** Your forms
+  ├── README.md
+  ├── requirements.txt *** The dependencies we need to install with "pip3 install -r requirements.txt"
+  
+  
   ```
 
 Overall:
@@ -91,10 +95,11 @@ Highlight folders:
 Instructions
 -----
 
-1. Understand the Project Structure (explained above) and where important files are located.
+1. Create a file called .env and add a variable called DATABASE_URI . This file will be used for the database connection and is added to the .gitignore so will not be deployed to source control:
+    * ```DATABASE_URI="pstgresql://user_name:password@localhost:5432/database_name" ```
 2. Build and run local development following the Development Setup steps below.
 3. Fill in the missing functionality in this application: this application currently pulls in fake data, and needs to now connect to a real database and talk to a real backend.
-3. Fill out every `TODO` section throughout the codebase. We suggest going in order of the following:
+4. Fill out every `TODO` section throughout the codebase. We suggest going in order of the following:
 
   1. Connect to a database in `config.py`. A project submission that uses a local database connection is fine.
   2. Using SQLAlchemy, set up normalized models for the objects we support in our web app in the Models section of `app.py`. Check out the sample pages provided at /artists/1, /venues/1, and /shows/1 for examples of the data we want to model, using all of the learned best practices in database schema design. Implement missing model properties and relationships using database migrations via Flask-Migrate.
