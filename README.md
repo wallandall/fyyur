@@ -52,6 +52,13 @@ npm install bootstrap@3
 ## Main Files: Project Structure
 
   ```sh
+  ├── migrations
+  ├── models
+  │   ├── __init__.py
+  │   ├── artist.py
+  │   ├── show.py
+  │   └── venue.py
+  │ 
   ├── static
   │   ├── css 
   │   ├── font
@@ -63,13 +70,16 @@ npm install bootstrap@3
       ├── forms
       ├── layouts
       └── pages
-  ├── .env *** The environment variables for the database connection
+  ├── .env *** The environment variables for the database connection and needs to be created
   ├── .gitignore
   ├── app.py *** the main driver of the app. Includes your SQLAlchemy models.
                     "python app.py" to run after installing dependencies
   ├── config.py *** Database URLs, CSRF generation, etc
+  ├── db.py
   ├── error.log
+  ├── fabfile.log
   ├── forms.py *** Your forms
+  ├── package.json
   ├── README.md
   ├── requirements.txt *** The dependencies we need to install with "pip3 install -r requirements.txt"
   
@@ -95,8 +105,9 @@ Highlight folders:
 Instructions
 -----
 
-1. Create a file called .env and add a variable called DATABASE_URI . This file will be used for the database connection and is added to the .gitignore so will not be deployed to source control:
-    * ```DATABASE_URI="pstgresql://user_name:password@localhost:5432/database_name" ```
+1. Create a file called .env and add a variable called DEV_DATABASE_URI and PROD_DATABASE_URI . This file will be used for the database connection and is added to the .gitignore so will not be deployed to source control:
+    * ```DEV_DATABASE_URI="pstgresql://user_name:password@localhost:5432/database_name" ```
+    * ```PROD_DATABASE_URI="pstgresql://user_name:password@localhost:5432/database_name" ```
 2. Build and run local development following the Development Setup steps below.
 3. Fill in the missing functionality in this application: this application currently pulls in fake data, and needs to now connect to a real database and talk to a real backend.
 4. Fill out every `TODO` section throughout the codebase. We suggest going in order of the following:

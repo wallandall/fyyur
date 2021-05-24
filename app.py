@@ -7,13 +7,17 @@ import dateutil.parser
 import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
 from flask_moment import Moment
-from flask_sqlalchemy import SQLAlchemy
+
 from flask_migrate import Migrate
 import logging
 from logging import DEBUG, Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from config import DevConfig
+from db import db
+from models.artist import Artist
+from models.show import Show
+from models.venue import Venue
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -22,62 +26,9 @@ from config import DevConfig
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object(DevConfig)
-db = SQLAlchemy(app)
+db.init_app(app)
 migrate = Migrate(app, db)
 
-print(DEBUG)
-
-# TODO: connect to a local postgresql database
-
-#----------------------------------------------------------------------------#
-# Models.
-#----------------------------------------------------------------------------#
-
-
-class Venue(db.Model):
-    __tablename__ = 'Venue'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    genres = db.Column(db.ARRAY(db.String(120)))
-    address = db.Column(db.String(120))
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    website = db.Column(db.String(120))
-    facebook_link = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean, default=True)
-    seeking_description = db.Column(db.String(500))
-    image_link = db.Column(db.String(500))
-    shows = db.relationship('Show', backref='Venue', lazy='dynamic')
-
-
-class Artist(db.Model):
-    __tablename__ = 'Artist'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    genres = db.Column(db.String(120))
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    website = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean, default=False, nullable=False)
-    seeking_description = db.Column(db.String(500), nullable=True)
-    image_link = db.Column(db.String(500))
-    shows = db.relationship('Show', backref='Artist', lazy=True)
-
-
-class Show(db.Model):
-    __tablename__ = 'Show'
-    id = db.Column(db.Integer, primary_key=True)
-    artist_id = db.Column(db.Integer, db.ForeignKey(
-        'Artist.id'), nullable=False)
-    venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
-    start_time = db.Column(db.DateTime, nullable=False)
-
-    def __repr__(self):
-        return '<Show {}{}>'.format(self.artist_id, self.venue_id)
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -112,16 +63,7 @@ def index():
 def venues():
     # TODO: replace with real venues data.
     #       num_shows should be aggregated based on number of upcoming shows per venue.
-
-    data = []
-    venues = Venue.query.group_by(Venue.id, Venue.state, Venue.city).all()
-    for venue in venues:
-        print(venue.name)
-        data[len(data) - 1]["venues"].append({
-            "id": venue.id,
-            "name": venue.name,
-
-        })
+    data = Venue.list_venue()
 
     return render_template('pages/venues.html', areas=data)
 
