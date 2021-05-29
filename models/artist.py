@@ -1,3 +1,4 @@
+from flask.globals import session
 from db import db
 
 
@@ -63,3 +64,60 @@ class Artist(db.Model):
         }
 
         return response
+
+    @classmethod
+    def show_artist(cls, artist_id):
+        artist = Artist.query.get(artist_id)
+
+        data = {
+            "id": artist.id,
+            "name": artist.name,
+            "genres": artist.genres,
+            "city": artist.city,
+            "state": artist.state,
+            "phone": artist.phone,
+            "website_link": artist.website,
+            "facebook_link": artist.facebook_link,
+            "seeking_venue": True if artist.seeking_venue in (True, 't', 'True') else False,
+            "seeking_description": artist.seeking_description,
+            "image_link": artist.image_link if artist.image_link else "",
+            "past_shows": [],  # add a class function
+            "upcomming_shows": [],  # zadd a class function
+            "past_shows_count": 5,  # zadd a class function
+            "upcomming_shows_count": 6  # zadd a class function
+
+        }
+
+        return data
+
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
+    @classmethod
+    def update_artist(cls, form_data, artist_id):
+        updated_artist = cls.query.get(artist_id)
+
+        try:
+
+            updated_artist.name = form_data.name.data
+            updated_artist.genres = ','.join(
+                str(e)for e in form_data.genres.data)
+            updated_artist.state = form_data.state.data
+            updated_artist.phone = form_data.phone.data
+            updated_artist.website = form_data.website_link.data
+            updated_artist.facebook_link = form_data.facebook_link.data
+            updated_artist.city = form_data.city.data
+            updated_artist.seeking_venue = True if form_data.seeking_venue.data in (
+                True, 't', 'True') else False
+            updated_artist.seeking_description = form_data.seeking_description.data
+            updated_artist.image_link = form_data.image_link.data if form_data.image_link.data else ""
+
+            db.session.commit()
+            error = False
+
+        except Exception as e:
+            db.session.rollback()
+            return False
+
+        return True

@@ -102,6 +102,35 @@ class Venue(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    @classmethod
+    def update_venue(cls, form_data, venue_id):
+        updated_venue = cls.query.get(venue_id)
+        genre_formated = ', '.join(str(e)for e in form_data.genres.data)
+        try:
+
+            updated_venue.name = form_data.name.data
+            updated_venue.genres = ','.join(
+                str(e)for e in form_data.genres.data)
+            updated_venue.address = form_data.address.data
+            updated_venue.city = form_data.city.data
+            updated_venue.state = form_data.state.data
+            updated_venue.phone = form_data.phone.data
+            updated_venue.website = form_data.website_link.data
+            updated_venue.facebook_link = form_data.facebook_link.data
+            updated_venue.seeking_talent = True if form_data.seeking_talent.data in (
+                True, 't', 'True') else False
+            updated_venue.seeking_description = form_data.seeking_description.data
+            updated_venue.image_link = form_data.image_link.data if form_data.image_link.data else ""
+
+            db.session.commit()
+            error = False
+
+        except Exception as e:
+            db.session.rollback()
+            return False
+
+        return True
+
     def delete_from_db(self):
         db.session.delete(self)
         db.session.commit()
