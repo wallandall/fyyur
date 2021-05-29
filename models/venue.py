@@ -15,12 +15,10 @@ class Venue(db.Model):
     seeking_talent = db.Column(db.Boolean, default=True)
     seeking_description = db.Column(db.String(500))
     image_link = db.Column(db.String(500))
-    shows = db.relationship('Show', backref='Venue',
-                            lazy='dynamic', cascade='all, delete-orphan')
 
-    def __init__(self, name, generes, address, city, state, phone, website, facebook_link, seeking_talent, seeking_description, image_link, shows):
+    def __init__(self, name, genres, address, city, state, phone, website, facebook_link, seeking_talent, seeking_description, image_link):
         self.name = name
-        self.generes = generes
+        self.genres = genres
         self.address = address
         self.city = city
         self.state = state
@@ -30,15 +28,32 @@ class Venue(db.Model):
         self.seeking_talent = seeking_talent
         self.seeking_description = seeking_description
         self.image_link = image_link
-        self.show = shows
 
     @classmethod
-    def find_by_state(cls, state):
-        return cls.query.filter_by(state=state)
+    def find_by_name(cls, search_term):
+        venues = cls.query.filter(cls.name.ilike('%' + search_term + '%'))
+        data = []
+        for venue in venues:
+            data.append({
+                "id": venue.id,
+                "name": venue.name,
+
+            })
+        count = len(data)
+        response = {
+            "count": count,
+            "data": data
+        }
+
+        return response
 
     @classmethod
-    def find_all(cls):
-        return cls.query.all()
+    def venue_exists(cls, name):
+        venue_exisits = cls.query.filter_by(name=name).first()
+        if venue_exisits:
+            return True
+        else:
+            return False
 
     @classmethod
     def list_venue(cls):
@@ -55,6 +70,31 @@ class Venue(db.Model):
                 "state": state,
                 "venues": venues
             })
+        return data
+
+    @classmethod
+    def show_venue(cls, venue_id):
+        venue = Venue.query.get(venue_id)
+
+        data = {
+            "id": venue.id,
+            "name": venue.name,
+            "genres": venue.genres,
+            "address": venue.address,
+            "city": venue.city,
+            "state": venue.state,
+            "phone": venue.phone,
+            "website": venue.website,
+            "facebook_link": venue.facebook_link,
+            "seeking_talent": True if venue.seeking_talent in (True, 't', 'True') else False,
+            "seeking_description": venue.seeking_description,
+            "image_link": venue.image_link if venue.image_link else "",
+            "past_shows": [],  # add a class function
+            "upcomming_shows": [],  # zadd a class function
+            "past_shows_count": 5,  # zadd a class function
+            "upcomming_shows_count": 6  # zadd a class function
+
+        }
 
         return data
 
