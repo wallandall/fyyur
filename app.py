@@ -238,22 +238,44 @@ def edit_venue_submission(venue_id):
 #  ----------------------------------------------------------------
 
 
+# Display Create Artist Form
 @ app.route('/artists/create', methods=['GET'])
 def create_artist_form():
     form = ArtistForm()
     return render_template('forms/new_artist.html', form=form)
 
+# Save Artist tothe Database
+
 
 @ app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
-    # called upon submitting the new artist listing form
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
+    form_data = ArtistForm(request.form)
+    print(form_data.name.data)
+    if Artist.artist_exists(form_data.name.data):
+        flash('Artist ' + form_data.name.data + ' already exists!')
+        return render_template('pages/home.html')
 
-    # on successful db insert, flash success
-    flash('Artist ' + request.form['name'] + ' was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+    try:
+        new_artist = Artist(
+            name=form_data.name.data,
+            genres=form_data.genres.data,
+            city=form_data.city.data,
+            state=form_data.state.data,
+            phone=form_data.state.data,
+            website=form_data.website_link.data,
+            facebook_link=form_data.facebook_link.data,
+            seeking_venue=form_data.seeking_venue.data,
+            seeking_description=form_data.seeking_description.data,
+            image_link=form_data.image_link.data
+
+        )
+        new_artist.save_to_db()
+        flash('Artist ' + form_data.name.data + ' was successfully listed!')
+    except Exception as ex:
+        flash('An error occurred. Artist ' +
+              form_data.name.data + ' could not be listed.')
+        traceback.print_exc()
+
     return render_template('pages/home.html')
 
 

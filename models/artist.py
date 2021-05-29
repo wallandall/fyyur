@@ -34,6 +34,14 @@ class Artist(db.Model):
         return cls.query.all()
 
     @classmethod
+    def artist_exists(cls, name):
+        artist_exisits = cls.query.filter_by(name=name).first()
+        if artist_exisits:
+            return True
+        else:
+            return False
+
+    @classmethod
     def list_artis(cls):
         data = []
         artist = Artist.query.with_entities(
