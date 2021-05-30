@@ -104,7 +104,8 @@ class Venue(db.Model):
             data.append({
                 "city": city,
                 "state": state,
-                "venues": venues
+                "venues": venues,
+                "num_upcoming_shows": shows
             })
         return data
 
@@ -151,7 +152,6 @@ class Venue(db.Model):
 
         data["past_shows"] = past_shows
         data["upcoming_shows"] = upcoming_shows
-        print(data)
         return data
 
     def save_to_db(self):
@@ -209,6 +209,7 @@ class Artist(db.Model):
     seeking_venue = db.Column(db.Boolean, default=False, nullable=False)
     seeking_description = db.Column(db.String(500), nullable=True)
     image_link = db.Column(db.String(500))
+    shows = db.relationship('Show', backref='Artist', lazy=True)
 
     def __init__(self, name, genres, city, state, phone, website, facebook_link, seeking_venue, seeking_description, image_link):
         self.name = name
@@ -221,6 +222,27 @@ class Artist(db.Model):
         self.seeking_venue = seeking_venue
         self.seeking_description = seeking_description
         self.image_link = image_link
+
+    @property
+    def upcoming_shows(self):
+        upcoming_shows = [
+            show for show in self.shows if show.start_time > datetime.now()]
+        return upcoming_shows
+
+    @property
+    def num_upcoming_shows(self):
+        return len(self.upcoming_shows)
+
+    @property
+    def past_shows(self):
+        past_shows = [
+            show for show in self.shows if show.start_time < datetime.now()]
+
+        return past_shows
+
+    @property
+    def num_past_shows(self):
+        return len(self.past_shows)
 
     @classmethod
     def find_all(cls):
@@ -235,7 +257,7 @@ class Artist(db.Model):
             return False
 
     @classmethod
-    def list_artis(cls):
+    def list_artists(cls):
         data = []
         artist = Artist.query.with_entities(
             Artist.id, Artist.name).distinct().all()
@@ -246,6 +268,7 @@ class Artist(db.Model):
                 "id": artist_id,
                 "name": name,
             })
+        data = Artist.query.with_entities(Artist.id, Artist.name).all()
         return data
 
     @classmethod
@@ -268,8 +291,25 @@ class Artist(db.Model):
 
     @classmethod
     def show_artist(cls, artist_id):
-        artist = Artist.query.get(artist_id)
-
+        artist = cls.query.get(artist_id)
+        past_shows = []
+        upcoming_shows = []
+        for show in artist.past_shows:
+            venue = Venue.query.get(show.venue_id)
+            past_shows.append({
+                "venue_id": venue.id,
+                "venue_name": venue.name,
+                "venue_image_link": venue.image_link,
+                "start_time": show.start_time
+            })
+        for show in artist.upcoming_shows:
+            venue = Venue.query.get(show.venue_id)
+            upcoming_shows.append({
+                "venue_id": venue.id,
+                "venue_name": venue.name,
+                "venue_image_link": venue.image_link,
+                "start_time": show.start_time
+            })
         data = {
             "id": artist.id,
             "name": artist.name,
@@ -282,10 +322,10 @@ class Artist(db.Model):
             "seeking_venue": True if artist.seeking_venue in (True, 't', 'True') else False,
             "seeking_description": artist.seeking_description,
             "image_link": artist.image_link if artist.image_link else "",
-            "past_shows": [],  # add a class function
-            "upcomming_shows": [],  # zadd a class function
-            "past_shows_count": 5,  # zadd a class function
-            "upcomming_shows_count": 6  # zadd a class function
+            "past_shows": past_shows,
+            "upcoming_shows": upcoming_shows,
+            "past_shows_count": artist.num_past_shows,
+            "upcoming_shows_count": artist.num_upcoming_shows
 
         }
 

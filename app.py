@@ -17,6 +17,7 @@ from config import DevConfig
 from db import db
 from models import Venue, Artist, Show
 import traceback
+from datetime import datetime
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -34,7 +35,11 @@ migrate = Migrate(app, db)
 
 
 def format_datetime(value, format='medium'):
-    date = dateutil.parser.parse(value)
+    #date = dateutil.parser.parse(value)
+    if isinstance(value, str):
+        date = dateutil.parser.parse(value)
+    else:
+        date = value
     if format == 'full':
         format = "EEEE MMMM, d, y 'at' h:mma"
     elif format == 'medium':
@@ -59,8 +64,6 @@ def index():
 
 @app.route('/venues')
 def venues():
-    # TODO: replace with real venues data.
-    #       num_shows should be aggregated based on number of upcoming shows per venue.
     data = Venue.list_venue()
 
     return render_template('pages/venues.html', areas=data)
@@ -80,8 +83,6 @@ def search_venues():
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
-    # TODO: replace with real venues data.
-    #       num_shows should be aggregated based on number of upcoming shows per venue.
     data = Venue.show_venue(venue_id)
 
     return render_template('pages/show_venue.html', venue=data)
@@ -153,8 +154,7 @@ def delete_venue(venue_id):
 
 @ app.route('/artists')
 def artists():
-
-    data = Artist.list_artis()
+    data = Artist.list_artists()
     return render_template('pages/artists.html', artists=data)
 
 # Search for an artist
@@ -172,9 +172,8 @@ def search_artists():
 
 @ app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
-    # TODO: replace with real venues data.
-    #       num_shows should be aggregated based on number of upcoming shows per venue.
     data = Artist.show_artist(artist_id)
+    #data = []
 
     return render_template('pages/show_artist.html', artist=data)
 
