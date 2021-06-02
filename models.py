@@ -2,7 +2,7 @@
 
 from flask.globals import session
 from sqlalchemy.orm import query
-from sqlalchemy import UniqueConstraint, distinct
+from sqlalchemy import func, distinct
 
 from datetime import datetime
 from db import db
@@ -29,10 +29,8 @@ class Venue(db.Model):
     image_link = db.Column(db.String(500))
     shows = db.relationship('Show', backref='Venue',
                             lazy=True, cascade='all, delete-orphan')
-    UniqueConstraint('name', 'city', 'state', 'address',
-                     name='unique_name_city_state_address')
 
-    def __init__(self, name, genres, address, city, state, phone, website, facebook_link, seeking_talent, seeking_description, image_link):
+    def __init__(self, name, genres, address, city, state, phone, website, facebook_link, seeking_talent, seeking_description, image_link, shows):
         self.name = name
         self.genres = genres
         self.address = address
@@ -44,26 +42,7 @@ class Venue(db.Model):
         self.seeking_talent = seeking_talent
         self.seeking_description = seeking_description
         self.image_link = image_link
-
-    @property
-    def upcoming_shows(self):
-        upcoming_shows = [
-            show for show in self.shows if show.start_time > datetime.now()]
-        return upcoming_shows
-
-    @property
-    def num_upcoming_shows(self):
-        return len(self.upcoming_shows)
-
-    @property
-    def past_shows(self):
-        past_shows = [
-            show for show in self.shows if show.start_time < datetime.now()]
-        return past_shows
-
-    @property
-    def num_past_shows(self):
-        return len(self.past_shows)
+        self.shows = shows
 
     @ classmethod
     def find_by_name(cls, search_term):
@@ -94,27 +73,56 @@ class Venue(db.Model):
     @ classmethod
     def list_venue(cls):
         data = []
-        city_state = cls.query.with_entities(
-            cls.city, cls.state).distinct().all()
-        for c in city_state:
-            city = c[0]
-            state = c[1]
-            venues = cls.query.filter_by(city=city, state=state).all()
-            shows = venues[0].upcoming_shows
+        city_state = cls.query.with_entities(func.count(
+            cls.id), cls.city, cls.state).group_by(cls.city, cls.state).all()
+
+        for area in city_state:
+            area_venues = cls.query.filter_by(
+                state=area.state).filter_by(city=area.city).all()
+            venue_data = []
+            for venue in area_venues:
+                venue_data.append({
+                    "id": venue.id,
+                    "name": venue.name,
+                    "num_upcoming_shows": len(db.session.query(Show).filter(Show.venue_id == 1).filter(Show.start_time > datetime.now()).all())
+                })
             data.append({
-                "city": city,
-                "state": state,
-                "venues": venues,
-                "num_upcoming_shows": shows
+                "city": area.city,
+                "state": area.state,
+                "venues": venue_data
             })
+
         return data
 
     @ classmethod
     def show_venue(cls, venue_id):
         venue = cls.query.get(venue_id)
-        upcoming_shows = []
-        past_shows = []
         if venue:
+            upcoming_shows_query = db.session.query(Show).join(Artist).filter(
+                Show.venue_id == venue_id).filter(Show.start_time > datetime.now()).all()
+            upcoming_shows = []
+
+            past_shows_query = db.session.query(Show).join(Artist).filter(
+                Show.venue_id == venue_id).filter(Show.start_time < datetime.now()).all()
+            past_shows = []
+
+            for show in past_shows_query:
+
+                past_shows.append({
+                    "artist_id": show.artist_id,
+                    "artist_name": show.Artist.name,
+                    "artist_image_link": show.Artist.image_link,
+                    "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
+                })
+
+            for show in upcoming_shows_query:
+
+                upcoming_shows.append({
+                    "artist_id": show.artist_id,
+                    "artist_name": show.Artist.name,
+                    "artist_image_link": show.Artist.image_link,
+                    "start_time": show.start_time.strftime("%Y-%m-%d %H:%M:%S")
+                })
             data = {
                 "id": venue.id,
                 "name": venue.name,
@@ -125,33 +133,17 @@ class Venue(db.Model):
                 "phone": venue.phone,
                 "website": venue.website,
                 "facebook_link": venue.facebook_link,
-                "seeking_talent": True if venue.seeking_talent in (True, 't', 'True') else False,
+                "seeking_talent": venue.seeking_talent,
                 "seeking_description": venue.seeking_description,
-                "image_link": venue.image_link if venue.image_link else "",
-                "past_shows_count": venue.num_past_shows,
-                "upcoming_shows_count": venue.num_upcoming_shows,
+                "image_link": venue.image_link,
+                "past_shows": past_shows,
+                "upcoming_shows": upcoming_shows,
+                "past_shows_count": len(past_shows),
+                "upcoming_shows_count": len(upcoming_shows),
             }
+        else:
+            data = []
 
-            for show in venue.past_shows:
-                artist = Artist.query.get(show.artist_id)
-                past_shows.append({
-                    "artist_id": show.artist_id,
-                    "artist_name": artist.name,
-                    "artist_image_link": artist.image_link,
-                    "start_time": str(show.start_time)
-                })
-
-            for show in venue.upcoming_shows:
-                artist = Artist.query.get(show.artist_id)
-                upcoming_shows.append({
-                    "artist_id": show.artist_id,
-                    "artist_name": artist.name,
-                    "artist_image_link": artist.image_link,
-                    "start_time": str(show.start_time)
-                })
-
-        data["past_shows"] = past_shows
-        data["upcoming_shows"] = upcoming_shows
         return data
 
     def save_to_db(self):
@@ -223,32 +215,11 @@ class Artist(db.Model):
         self.seeking_description = seeking_description
         self.image_link = image_link
 
-    @property
-    def upcoming_shows(self):
-        upcoming_shows = [
-            show for show in self.shows if show.start_time > datetime.now()]
-        return upcoming_shows
-
-    @property
-    def num_upcoming_shows(self):
-        return len(self.upcoming_shows)
-
-    @property
-    def past_shows(self):
-        past_shows = [
-            show for show in self.shows if show.start_time < datetime.now()]
-
-        return past_shows
-
-    @property
-    def num_past_shows(self):
-        return len(self.past_shows)
-
-    @classmethod
+    @ classmethod
     def find_all(cls):
         return cls.query.all()
 
-    @classmethod
+    @ classmethod
     def artist_exists(cls, name):
         artist_exisits = cls.query.filter_by(name=name).first()
         if artist_exisits:
@@ -256,7 +227,7 @@ class Artist(db.Model):
         else:
             return False
 
-    @classmethod
+    @ classmethod
     def list_artists(cls):
         data = []
         artist = Artist.query.with_entities(
@@ -271,7 +242,7 @@ class Artist(db.Model):
         data = Artist.query.with_entities(Artist.id, Artist.name).all()
         return data
 
-    @classmethod
+    @ classmethod
     def find_artist(cls, name):
         artists = cls.query.filter(cls.name.ilike('%' + name + '%'))
         data = []
@@ -292,42 +263,52 @@ class Artist(db.Model):
     @classmethod
     def show_artist(cls, artist_id):
         artist = cls.query.get(artist_id)
-        past_shows = []
-        upcoming_shows = []
-        for show in artist.past_shows:
-            venue = Venue.query.get(show.venue_id)
-            past_shows.append({
-                "venue_id": venue.id,
-                "venue_name": venue.name,
-                "venue_image_link": venue.image_link,
-                "start_time": show.start_time
-            })
-        for show in artist.upcoming_shows:
-            venue = Venue.query.get(show.venue_id)
-            upcoming_shows.append({
-                "venue_id": venue.id,
-                "venue_name": venue.name,
-                "venue_image_link": venue.image_link,
-                "start_time": show.start_time
-            })
-        data = {
-            "id": artist.id,
-            "name": artist.name,
-            "genres": artist.genres,
-            "city": artist.city,
-            "state": artist.state,
-            "phone": artist.phone,
-            "website_link": artist.website,
-            "facebook_link": artist.facebook_link,
-            "seeking_venue": True if artist.seeking_venue in (True, 't', 'True') else False,
-            "seeking_description": artist.seeking_description,
-            "image_link": artist.image_link if artist.image_link else "",
-            "past_shows": past_shows,
-            "upcoming_shows": upcoming_shows,
-            "past_shows_count": artist.num_past_shows,
-            "upcoming_shows_count": artist.num_upcoming_shows
+        if artist:
+            upcoming_shows_query = db.session.query(Show).join(Venue).filter(
+                Show.artist_id == artist_id).filter(Show.start_time > datetime.now()).all()
 
-        }
+            upcoming_shows = []
+
+            past_shows_query = db.session.query(Show).join(Venue).filter(
+                Show.artist_id == artist_id).filter(Show.start_time < datetime.now()).all()
+
+            past_shows = []
+
+            for show in past_shows_query:
+                past_shows.append({
+                    "artist_id": show.artist_id,
+                    "venue_name": show.Venue.name,
+                    "venue_image_link": show.Venue.image_link,
+                    "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
+                })
+
+            for show in upcoming_shows_query:
+                print(show.Venue.image_link)
+                upcoming_shows.append({
+                    "venue_id": show.venue_id,
+                    "venue_name": show.Venue.name,
+                    "artist_image_link": show.Venue.image_link,
+                    "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
+                })
+            data = {
+                "id": artist.id,
+                "name": artist.name,
+                "genres": artist.genres,
+                "city": artist.city,
+                "state": artist.state,
+                "phone": artist.phone,
+                "website": artist.website,
+                "facebook_link": artist.facebook_link,
+                "seeking_venue": artist.seeking_venue,
+                "seeking_description": artist.seeking_description,
+                "image_link": artist.image_link,
+                "past_shows": past_shows,
+                "upcoming_shows": upcoming_shows,
+                "past_shows_count": len(past_shows),
+                "upcoming_shows_count": len(upcoming_shows),
+            }
+        else:
+            data = []
 
         return data
 
@@ -387,21 +368,16 @@ class Show(db.Model):
     @classmethod
     def list_shows(cls):
         data = []
-        shows = db.session.query(
-            cls.artist_id, cls.venue_id, cls.start_time).all()
+        shows = db.session.query(Show).join(Artist).join(Venue).all()
 
         for show in shows:
-            artist = db.session.query(Artist.name, Artist.image_link).filter(
-                Artist.id == show[0]).one()
-            venue = db.session.query(Venue.name).filter(
-                Venue.id == show[1]).one()
             data.append({
-                "venue_id": show[1],
-                "venue_name": venue[0],
-                "artist_id": show[0],
-                "artist_name": artist[0],
-                "artist_image_link": artist[1],
-                "start_time": str(show[2])
+                "venue_id": show.venue_id,
+                "venue_name": show.Venue.name,
+                "artist_id": show.artist_id,
+                "artist_name": show.Artist.name,
+                "artist_image_link": show.Artist.image_link,
+                "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
             })
 
         return data
