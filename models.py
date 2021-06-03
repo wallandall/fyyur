@@ -17,7 +17,8 @@ class Venue(db.Model):
     __tablename__ = 'Venue'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
-    genres = db.Column(db.ARRAY(db.String(120)))
+    #genres = db.Column(db.ARRAY(db.String(120)))
+    genres = db.Column(db.String)
     address = db.Column(db.String(120))
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
@@ -27,22 +28,8 @@ class Venue(db.Model):
     seeking_talent = db.Column(db.Boolean, default=True)
     seeking_description = db.Column(db.String(500))
     image_link = db.Column(db.String(500))
-    shows = db.relationship('Show', backref='Venue',
-                            lazy=True, cascade='all, delete-orphan')
-
-    def __init__(self, name, genres, address, city, state, phone, website, facebook_link, seeking_talent, seeking_description, image_link, shows):
-        self.name = name
-        self.genres = genres
-        self.address = address
-        self.city = city
-        self.state = state
-        self.phone = phone
-        self.website = website
-        self.facebook_link = facebook_link
-        self.seeking_talent = seeking_talent
-        self.seeking_description = seeking_description
-        self.image_link = image_link
-        self.shows = shows
+    # shows = db.relationship('Show', backref='Venue',
+    #                        lazy=True, cascade='all, delete-orphan')
 
     @ classmethod
     def find_by_name(cls, search_term):
@@ -201,19 +188,7 @@ class Artist(db.Model):
     seeking_venue = db.Column(db.Boolean, default=False, nullable=False)
     seeking_description = db.Column(db.String(500), nullable=True)
     image_link = db.Column(db.String(500))
-    shows = db.relationship('Show', backref='Artist', lazy=True)
-
-    def __init__(self, name, genres, city, state, phone, website, facebook_link, seeking_venue, seeking_description, image_link):
-        self.name = name
-        self.genres = genres
-        self.city = city
-        self.state = state
-        self.phone = phone
-        self.website = website
-        self.facebook_link = facebook_link
-        self.seeking_venue = seeking_venue
-        self.seeking_description = seeking_description
-        self.image_link = image_link
+    #shows = db.relationship('Show', backref='Artist', lazy=True)
 
     @ classmethod
     def find_all(cls):
@@ -359,11 +334,6 @@ class Show(db.Model):
 
     def __repr__(self):
         return '<Show {}{}>'.format(self.artist_id, self.venue_id)
-
-    def __init__(self, start_time, artist_id, venue_id):
-        self.start_time = start_time
-        self.artist_id = artist_id
-        self.venue_id = venue_id
 
     @classmethod
     def list_shows(cls):
