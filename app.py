@@ -5,7 +5,15 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import (
+    Flask,
+    render_template,
+    request,
+    Response,
+    flash,
+    redirect,
+    url_for
+)
 from flask_moment import Moment
 
 from flask_migrate import Migrate, show
@@ -35,7 +43,7 @@ migrate = Migrate(app, db)
 
 
 def format_datetime(value, format='medium'):
-    #date = dateutil.parser.parse(value)
+    # date = dateutil.parser.parse(value)
     if isinstance(value, str):
         date = dateutil.parser.parse(value)
     else:
@@ -109,7 +117,7 @@ def create_venue_submission():
     try:
         new_venue = Venue(
             name=form_data.name.data,
-            genres=form_data.genres.data,
+            genres=','.join(form_data.genres.data),
             address=form_data.address.data,
             city=form_data.city.data,
             state=form_data.state.data,
@@ -173,7 +181,6 @@ def search_artists():
 @ app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
     data = Artist.show_artist(artist_id)
-    #data = []
 
     return render_template('pages/show_artist.html', artist=data)
 
@@ -186,8 +193,21 @@ def show_artist(artist_id):
 @ app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
     artist = Artist.show_artist(artist_id)
-    form = ArtistForm(data=artist)
+    form = ArtistForm()
+    if artist:
+        form.name.data = artist["name"]
+        form.city.data = artist["city"]
+        form.state.data = artist["state"]
+        form.phone.data = artist["phone"]
+        form.genres.data = artist["genres"]
+        form.facebook_link.data = artist["facebook_link"]
+        form.image_link.data = artist["image_link"]
+        form.website_link.data = artist["website"]
+        form.seeking_venue.data = artist["seeking_venue"]
+        form.seeking_description.data = artist["seeking_description"]
+
     return render_template('forms/edit_artist.html', form=form, artist=artist)
+
 
 # Update Artist
 
@@ -211,7 +231,19 @@ def edit_artist_submission(artist_id):
 @ app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
     venue = Venue.show_venue(venue_id)
-    form = VenueForm(data=venue)
+    form = VenueForm()
+    if venue:
+        form.name.data = venue["name"]
+        form.city.data = venue["city"]
+        form.state.data = venue["state"]
+        form.phone.data = venue["phone"]
+        form.address.data = venue["address"]
+        form.genres.data = venue["genres"]
+        form.facebook_link.data = venue["facebook_link"]
+        form.image_link.data = venue["image_link"]
+        form.website_link.data = venue["website"]
+        form.seeking_talent.data = venue["seeking_talent"]
+        form.seeking_description.data = venue["seeking_description"]
 
     return render_template('forms/edit_venue.html', form=form, venue=venue)
 
@@ -253,18 +285,18 @@ def create_artist_submission():
     try:
         new_artist = Artist(
             name=form_data.name.data,
-            genres=form_data.genres.data,
+            genres=','.join(form_data.genres.data),
             city=form_data.city.data,
             state=form_data.state.data,
-            phone=form_data.state.data,
+            phone=form_data.phone.data,
             website=form_data.website_link.data,
             facebook_link=form_data.facebook_link.data,
             seeking_venue=form_data.seeking_venue.data,
             seeking_description=form_data.seeking_description.data,
             image_link=form_data.image_link.data
-
         )
         new_artist.save_to_db()
+        print(new_artist.genres)
         flash('Artist ' + form_data.name.data + ' was successfully listed!')
     except Exception as ex:
         flash('An error occurred. Artist ' +

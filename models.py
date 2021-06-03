@@ -27,6 +27,7 @@ class Venue(db.Model):
     seeking_talent = db.Column(db.Boolean, default=True)
     seeking_description = db.Column(db.String(500))
     image_link = db.Column(db.String(500))
+    shows = db.relationship('Show', backref='Venue', lazy=True)
 
     @ classmethod
     def find_by_name(cls, search_term):
@@ -185,7 +186,7 @@ class Artist(db.Model):
     seeking_venue = db.Column(db.Boolean, default=False, nullable=False)
     seeking_description = db.Column(db.String(500), nullable=True)
     image_link = db.Column(db.String(500))
-    #shows = db.relationship('Show', backref='Artist', lazy=True)
+    shows = db.relationship('Show', backref='Artist', lazy=True)
 
     @ classmethod
     def find_all(cls):
@@ -249,13 +250,12 @@ class Artist(db.Model):
             for show in past_shows_query:
                 past_shows.append({
                     "artist_id": show.artist_id,
-                    "venue_name": show.Venue.name,
+                    "venue_name": show,
                     "venue_image_link": show.Venue.image_link,
                     "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
                 })
 
             for show in upcoming_shows_query:
-                print(show.Venue.image_link)
                 upcoming_shows.append({
                     "venue_id": show.venue_id,
                     "venue_name": show.Venue.name,
